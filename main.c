@@ -85,14 +85,14 @@ void * handle_client(void *s){
                   set_pixel(x,y,c, 0xff);
                }
 #endif
-               else if(!strncmp(buf, "SIZE", 4)){
-                  static const char out[] = "SIZE " STR(PIXEL_WIDTH) " " STR(PIXEL_HEIGHT) "\n";
-                  send(sock, out, sizeof(out), MSG_DONTWAIT | MSG_NOSIGNAL);
-               }
                else if(sscanf(buf,"GC %u %u",&x,&y) == 2){
                   //char colorout[6]; 
                   sprintf(colorout,"%06x",0xffffff & pixels[y * PIXEL_WIDTH + x]);
                   send(sock, colorout, sizeof(colorout), MSG_DONTWAIT | MSG_NOSIGNAL);
+               }
+               else if(!strncmp(buf, "SIZE", 4)){
+                  static const char out[] = "SIZE " STR(PIXEL_WIDTH) " " STR(PIXEL_HEIGHT) "\n";
+                  send(sock, out, sizeof(out), MSG_DONTWAIT | MSG_NOSIGNAL);
                }
                else{
                   printf("QUATSCH[%i]: ", i);
