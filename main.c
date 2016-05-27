@@ -87,7 +87,7 @@ void * handle_client(void *s){
 #endif
                else if(sscanf(buf,"GC %u %u",&x,&y) == 2){
                   //char colorout[6]; 
-                  sprintf(colorout,"%06x",0xffffff & pixels[y * PIXEL_WIDTH + x]);
+                  sprintf(colorout,"%06x\n",0xffffff & pixels[y * PIXEL_WIDTH + x]);
                   send(sock, colorout, sizeof(colorout), MSG_DONTWAIT | MSG_NOSIGNAL);
                }
                else if(!strncmp(buf, "SIZE", 4)){
