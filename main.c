@@ -10,6 +10,7 @@
 
 #define XSTR(a) #a
 #define STR(a) XSTR(a)
+#define SPAMM_CONTROL 50
 
 uint32_t* pixels;
 char colorout[6];  
@@ -46,6 +47,13 @@ void set_pixel(uint16_t x, uint16_t y, uint32_t c, uint8_t a)
 void * handle_client(void *s){
    client_thread_count++;
    int sock = *(int*)s;
+   if(client_thread_count >= SPAMM_CONTROL){
+     //static const char out[] = "Max. TCP-connections per IP: %d",SPAMM_CONTROLL;
+     //send(sock, out, sizeof(out), MSG_DONTWAIT | MSG_NOSIGNAL);
+     //printf("Client kicked.\n"); 
+     close(sock);
+     return 0; 
+   }
    char buf[BUFSIZE];
    int read_size, read_pos = 0;
    uint32_t x,y,c;
