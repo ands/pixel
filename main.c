@@ -10,7 +10,7 @@
 
 #define XSTR(a) #a
 #define STR(a) XSTR(a)
-#define SPAMM_CONTROL 50
+//#define SPAM_CONTROL 50
 
 uint32_t* pixels;
 char colorout[6];  
@@ -47,13 +47,13 @@ void set_pixel(uint16_t x, uint16_t y, uint32_t c, uint8_t a)
 void * handle_client(void *s){
    client_thread_count++;
    int sock = *(int*)s;
-   if(client_thread_count >= SPAMM_CONTROL){
+   /*if(client_thread_count >= SPAM_CONTROL){
      //static const char out[] = "Max. TCP-connections per IP: %d",SPAMM_CONTROLL;
      //send(sock, out, sizeof(out), MSG_DONTWAIT | MSG_NOSIGNAL);
      //printf("Client kicked.\n"); 
      close(sock);
      return 0; 
-   }
+   }*/
    char buf[BUFSIZE];
    int read_size, read_pos = 0;
    uint32_t x,y,c;
@@ -65,7 +65,7 @@ void * handle_client(void *s){
          for (int i = 0; i < read_pos; i++){
             if (buf[i] == '\n'){
                buf[i] = 0;
-//#if 1 // mit alpha, aber ggf. instabil
+#if 1 // mit alpha, aber ggf. instabil
                if(!strncmp(buf, "PX ", 3)){ // ...frag nicht :D...
                   char *pos1 = buf + 3;
                   x = strtoul(buf + 3, &pos1, 10);
@@ -88,11 +88,11 @@ void * handle_client(void *s){
                      }
                   }
                }
-//#else // ohne alpha
+#else // ohne alpha
                if(sscanf(buf,"PX %u %u %x",&x,&y,&c) == 3){
                   set_pixel(x,y,c, 0xff);
                }
-//#endif
+#endif
                else if(sscanf(buf,"PX %u %u",&x,&y) == 2){
                   sprintf(colorout,"%06x\n",0xffffff & pixels[y * PIXEL_WIDTH + x]);
                   send(sock, colorout, sizeof(colorout), MSG_DONTWAIT | MSG_NOSIGNAL);
