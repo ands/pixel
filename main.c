@@ -64,7 +64,7 @@ void * handle_client(void *s){
          for (int i = 0; i < read_pos; i++){
             if (buf[i] == '\n'){
                buf[i] = 0;
-#if 1 // mit alpha, aber ggf. instabil
+#if 0 // mit alpha, aber ggf. instabil
                if(!strncmp(buf, "PX ", 3)){ // ...frag nicht :D...
                   char *pos1 = buf + 3;
                   x = strtoul(buf + 3, &pos1, 10);
@@ -93,10 +93,13 @@ void * handle_client(void *s){
                }
 #endif
                else if(sscanf(buf,"PX %u %u",&x,&y) == 2){
-                  const char colorout[6];
-                  sprintf(colorout,"%06x\n",0xffffff & pixels[y * PIXEL_WIDTH + x]);
-                  send(sock, colorout, sizeof(colorout), MSG_DONTWAIT | MSG_NOSIGNAL);
-               }
+		  if((x >= 0 && x <= PIXEL_WIDTH) && (y >= 0 && y <= PIXEL_HEIGHT)){ //to prevent bullshit to happen 
+		      char colorout[6];
+		      //printf("%d , %d",x,y);
+		      sprintf(colorout,"%06x\n",0xffffff & pixels[y * PIXEL_WIDTH + x]);
+                      send(sock, colorout, sizeof(colorout), MSG_DONTWAIT | MSG_NOSIGNAL);
+               	}
+	       }
                else if(!strncmp(buf, "SIZE", 4)){
                   static const char out[] = "SIZE " STR(PIXEL_WIDTH) " " STR(PIXEL_HEIGHT) "\n";
                   send(sock, out, sizeof(out), MSG_DONTWAIT | MSG_NOSIGNAL);
