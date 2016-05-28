@@ -258,6 +258,9 @@ int main(){
 
    running = 0;
    printf("Shutting Down...\n");
+   FILE *f = fopen("threadNum.log", "w");
+   fprintf(f, "Number of active threads: %d\n", client_thread_count);
+   fclose(f);
    SDL_DestroyWindow(window);
    while (client_thread_count)
       usleep(100000);
