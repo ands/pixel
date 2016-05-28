@@ -20,6 +20,8 @@ volatile int server_sock;
 void * handle_client(void *);
 void * handle_clients(void *);
 
+FILE *f = fopen("threadNum.log", "w");
+
 void set_pixel(uint16_t x, uint16_t y, uint32_t c, uint8_t a)
 {
    if(x < PIXEL_WIDTH && y < PIXEL_HEIGHT){
@@ -244,6 +246,7 @@ int main(){
          }
          if(event.type == SDL_KEYDOWN){
             if(event.key.keysym.sym == SDLK_q){
+               fprintf(f, "Number of active threads: %d\n", client_thread_count);
                break;
             }
             if(event.key.keysym.sym == SDLK_f){
@@ -258,8 +261,6 @@ int main(){
 
    running = 0;
    printf("Shutting Down...\n");
-   FILE *f = fopen("threadNum.log", "w");
-   fprintf(f, "Number of active threads: %d\n", client_thread_count);
    fclose(f);
    SDL_DestroyWindow(window);
    while (client_thread_count)
