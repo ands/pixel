@@ -65,15 +65,7 @@ void * handle_client(void *s){
             if (buf[i] == '\n'){
                buf[i] = 0;
 #if 1 // mit alpha, aber ggf. instabil
-              if(sscanf(buf,"PX %u %u",&x,&y) == 2){
-		         if((x >= 0 && x <= PIXEL_WIDTH) && (y >= 0 && y <= PIXEL_HEIGHT)){ //to prevent bullshit to happen 
-		         char colorout[6];
-		         //printf("%d , %d",x,y);
-		         sprintf(colorout,"%06x\n",0xffffff & pixels[y * PIXEL_WIDTH + x]);
-                 send(sock, colorout, sizeof(colorout), MSG_DONTWAIT | MSG_NOSIGNAL);
-               	 }
-	          }
-              else if(!strncmp(buf, "PX ", 3)){ // ...frag nicht :D...
+               if(!strncmp(buf, "PX ", 3)){ // ...frag nicht :D...
                   char *pos1 = buf + 3;
                   x = strtoul(buf + 3, &pos1, 10);
                   if(buf != pos1){
@@ -91,6 +83,12 @@ void * handle_client(void *s){
                               c >>= 8;
                            }
                            set_pixel(x,y,c,a);
+                        }
+                        else if((x >= 0 && x <= PIXEL_WIDTH) && (y >= 0 && y <= PIXEL_HEIGHT)){ // does not contain color -> color request
+                           char colorout[6];
+		                   //printf("%d , %d",x,y);
+		                   sprintf(colorout,"%06x\n",0xffffff & pixels[y * PIXEL_WIDTH + x]);
+                           send(sock, colorout, sizeof(colorout), MSG_DONTWAIT | MSG_NOSIGNAL);
                         }
                      }
                   }
