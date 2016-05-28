@@ -12,8 +12,7 @@
 #define STR(a) XSTR(a)
 //#define SPAM_CONTROL 50
 
-uint32_t* pixels;
-char colorout[6];  
+uint32_t* pixels;  
 volatile int running = 1;
 volatile int client_thread_count = 0;
 volatile int server_sock;
@@ -94,6 +93,7 @@ void * handle_client(void *s){
                }
 #endif
                else if(sscanf(buf,"PX %u %u",&x,&y) == 2){
+                  const char colorout[6];
                   sprintf(colorout,"%06x\n",0xffffff & pixels[y * PIXEL_WIDTH + x]);
                   send(sock, colorout, sizeof(colorout), MSG_DONTWAIT | MSG_NOSIGNAL);
                }
