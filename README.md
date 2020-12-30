@@ -2,12 +2,12 @@
 Fast pixelflut server written in C. It is a collaborative coding game. See https://cccgoe.de/wiki/Pixelflut for details about the game itself. In short: project the pixelflut server output onto a wall where many people can see it. Connected clients can then set single pixels by sending a string like "PX [x] [y] [color]\n" (e.g. "PX 100 300 00FF12\n") to its TCP socket. Use netcat, python or whatever you want.
 
 ## Hardware requirements
-Every x86 dual-core with a little bit of graphics power (for 2D SDL) should work. On an Core i3-4010U you can easily utilize a 1 GBit Nic. On large events, 10 GBit fiber and a few more CPU-Cores are even more fun. On real server hardware you want to add a graphics card. One thread per CPU-Core seems to be a good rule of thumb.
+Every cpu with a little bit of power (for 2D SDL) should work. On an Core i3-4010U you can easily utilize a 1 GBit Nic. On Raspberry Pi 4B you get around 30 megabytes/sek. On large events, 10 GBit fiber and a few more CPU-Cores are even more fun. On real server hardware you want to add a graphics card. One thread per CPU-Core seems to be a good rule of thumb.
 
 ## Features
 - Multithreaded
 - Can display an overlay with some statistics
-- Serves real-time WebGL histogram and help text to browsers (same TCP port)
+- Webinterface serves real-time WebGL histogram and help text (same TCP port)
 - Optional fade to black for old pixels to encourage pixel refreshes
 - Supported commands:
   - send pixel: 'PX {x} {y} {GG or RRGGBB or RRGGBBAA as HEX}\n'
@@ -18,15 +18,63 @@ Every x86 dual-core with a little bit of graphics power (for 2D SDL) should work
   - request help message with all commands: 'HELP\n'
 
 ## Build
-On a clean Debian installation with the "SSH server" and "standard system utilities" selected during setup:
+On a clean Debian installation with the "SSH server" and "standard system utilities" selected during setup. A system with desktop shound also work.
 ```
 apt update
 apt install xorg git build-essential pkg-config libsdl2-dev -y
 git clone https://github.com/larsmm/pixelflut.git
 cd pixelflut
 make
+```
+
+## Options
+```
 ./pixelflut --help
 ```
+```
+usage: ./pixelflut [OPTION]...
+options:
+        --width <pixels>                Framebuffer width. Default: Screen width.
+        --height <pixels>               Framebuffer width. Default: Screen height.
+        --port <port>                   TCP port. Default: 1234.
+        --connection_timeout <seconds>  Connection timeout on idle. Default: 5s.
+        --connections_max <n>           Maximum number of open connections. Default: 1000.
+        --threads <n>                   Number of connection handler threads. Default: 4.
+        --no-histogram                  Disable calculating and serving the histogram over HTTP.
+        --window                        Start in window mode.
+        --fade_out                      Enable fading out the framebuffer contents.
+        --fade_interval <frames>        Interval for fading out the framebuffer as number of displayed frames. Default: 4.
+        --hide_text                     Hide the overlay text.
+        --show_ip_instead_of_hostname   Show IPv4 of interface with default-gateway on overlay.
+        --show_custom_ip <IP>           Show specific IP instead of hostname.
+```
+
+## Start Server locally
+If you are using linux without a desktop environment, start x server first:
+```
+startx &  # start in background
+```
+Start pixelflut server:
+```
+./pixelflut
+```
+
+## Start Server over ssh
+If you are using linux with a desktop environment it has to run on the same user as you are using to connect over ssh. List availible displays:
+```
+ps e | grep -Po " DISPLAY=[\.0-9A-Za-z:]* " | sort -u
+```
+Start pixelflut on local display (x forwarding), e.g.:
+```
+DISPLAY=localhost:10.0 ./pixelflut --window
+```
+Start pixelflut on server display, e.g.:
+```
+DISPLAY=:0.0 ./pixelflut
+```
+
+## Stop Server
+Press q or Ctrl+c or kill the process
 
 ## Connection limit
 Best practise: set overall limit of the pixelflut-server high (--connections_max 1000) and limit max connections to the pixelflut port (default: 1234) per IP via iptables to 10-20:
@@ -47,25 +95,6 @@ Activate:
 ```
 iptables-restore < iptables.save
 ```
-
-## Start Server
-start x server first, then the pixelflut server:
-```
-startx &  # start in background
-./pixelflut
-```
-
-## Stop Server
-Press q or Ctrl+c
-
-## Multiple screens
-If you need the output to be displayed on a second screen (projector), you have to tell it which display to use, e.g.:
-```
-DISPLAY=:0.1 ./pixelflut
-```
-- If you expand the main display, the main display will be ":0.0" or ":0" and the projector ":0.1".
-- If you duplicate the main display, the main display will be ":0.0" and the projector ":1.0".
-- If you have only one display, it will be ":0.0" or ":0".
 
 ## Display driver
 Sometimes the free NVidia driver has problems on multiple displays. So install the proprietary driver:
@@ -106,3 +135,4 @@ systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 ## TODO
 - Use epoll() to check multiple sockets for I/O events at once
 - better network-statistics
+- ipv6

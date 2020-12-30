@@ -1,42 +1,28 @@
+# ============================= target: all =============================
+
 CC = gcc
-EXE_SDL = pixelflut
-# EXE_PI = pixel_pi
 
-# all:
-	# @echo "please execute either 'make sdl' or 'make pi'."
+LDFLAGS = `pkg-config --libs sdl2` -lm -latomic -ldl -lpthread -O3 -flto -fomit-frame-pointer
 
+CFLAGS = -Wall -Wextra -Werror -pedantic -std=c11 -c `pkg-config --cflags sdl2` -O3 -flto -march=native -fomit-frame-pointer
 
-LDFLAGS_PI = -O3 -Wl,--whole-archive -L/opt/vc/lib/ -lGLESv2 -lEGL -lbcm_host -lvcos -lvchiq_arm -lpthread -lrt -L/opt/vc/src/hello_pi/libs/vgfont -ldl -lm -Wl,--no-whole-archive -rdynamic -fomit-frame-pointer -flto
-CFLAGS_PI = -c -O3 -march=native -DUSE_OPENGL -DUSE_EGL -DIS_RPI -DSTANDALONE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -DTARGET_POSIX -D_LINUX -fPIC -DPIC -D_REENTRANT -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -U_FORTIFY_SOURCE -Wall -DHAVE_LIBOPENMAX=2 -DOMX -DOMX_SKIP64BIT -ftree-vectorize -pipe -DUSE_EXTERNAL_OMX -DHAVE_LIBBCM_HOST -DUSE_EXTERNAL_LIBBCM_HOST -DUSE_VCHIQ_ARM -Wno-psabi -I/opt/vc/include/ -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux -I./ -I/opt/vc/src/hello_pi/libs/ilclient -I/opt/vc/src/hello_pi/libs/vgfont -Wno-deprecated-declarations -Wno-missing-braces -fomit-frame-pointer
-
-# pi: $(EXE_PI)
-
-# $(EXE_PI): main_pi.o
-	# $(CC) -o $@ main_pi.o $(LDFLAGS_PI)
-
-# main_pi.o: main_pi.c
-	# $(CC) $(CFLAGS_PI) $< -o $@
-
-LDFLAGS_SDL = `pkg-config --libs sdl2` -lm -ldl -lpthread -O3 -flto -fomit-frame-pointer
-CFLAGS_SDL = -Wall -Wextra -Werror -pedantic -std=c11 -c `pkg-config --cflags sdl2` -O3 -flto -march=native -fomit-frame-pointer
-
+# for macos:
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
-    CFLAGS_SDL += -framework OpenGL
+    CFLAGS += -framework OpenGL
 else
-	CFLAGS_SDL += -lGL
+	CFLAGS += -lGL
 endif
 
-# sdl: $(EXE_SDL)
-all: $(EXE_SDL)
+all: pixelflut
 
-$(EXE_SDL): main.o
-	$(CC) -o $@ main.o $(LDFLAGS_SDL)
+pixelflut: main.o
+	$(CC) -o pixelflut main.o $(LDFLAGS)
 
 main.o: main.c commandhandler.c framebuffer.c histogram.c server.c
-	$(CC) $(CFLAGS_SDL) $< -o $@
+	$(CC) $(CFLAGS) $< -o $@
 
-
+# ============================= clean =============================
 
 clean:
-	rm -rf *.o $(EXE_SDL) $(EXE_PI)
+	rm -rf *.o pixelflut
