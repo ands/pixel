@@ -4,6 +4,7 @@
 #include <netdb.h>
 #include <ifaddrs.h>
 #include <time.h>
+#include <sys/resource.h>
 
 #define BEGINS_WITH(str, test) (!strncmp(str, test, sizeof(test)))
 #define OPTION(opt, desc) printf("\t" opt "\t" desc "\n")
@@ -17,7 +18,7 @@ int main(int argc, char **argv)
 	int height = 0;
 	uint16_t port = 1234;
 	int connection_timeout = 5;
-	int connections_max = 1000;
+	long unsigned int connections_max = 1000;
 	int threads = 4;
 	int serve_histogram = 1;
 	int start_fullscreen = 1;
@@ -38,7 +39,7 @@ int main(int argc, char **argv)
 			OPTION("--height <pixels>", "\tFramebuffer width. Default: Screen height.");
 			OPTION("--port <port>", "\t\tTCP port. Default: 1234.");
 			OPTION("--connection_timeout <seconds>", "Connection timeout on idle. Default: 5s.");
-			OPTION("--connections_max <n>", "\tMaximum number of open connections. Default: 1000.");
+			OPTION("--connections_max <n>", "\tMaximum number of open connections. [1-60000] Default: 1000.");
 			OPTION("--threads <n>", "\t\tNumber of connection handler threads. Default: 4.");
 			OPTION("--no-histogram", "\t\tDisable calculating and serving the histogram over HTTP.");
 			OPTION("--window", "\t\tStart in window mode.");
@@ -47,7 +48,7 @@ int main(int argc, char **argv)
 			OPTION("--hide_text", "\t\tHide the overlay text.");
 			OPTION("--show_ip_instead_of_hostname", "Show IPv4 of interface with default-gateway on overlay.");
 			OPTION("--show_custom_ip <IP>", "\tShow specific IP instead of hostname.");
-			OPTION("--screenshot_interval <s>", "Take screenshot every s seconds to png files in pixelflut dir.");
+			OPTION("--screenshot_interval <seconds>", "Time between screenshots. (png files in pixelflut dir) Default: disabled.");
 			OPTION("--screenshot_use_bmp", "\tUse bmp instead of png because of speed.");
 			return 0;
 		}
@@ -116,6 +117,17 @@ int main(int argc, char **argv)
 
 	if (connections_max < 1)
 		connections_max = 1;
+	if (connections_max > 60000)
+		connections_max = 60000;
+	// set ulimit for this process == maximum number of opened files or sockets or connections:
+	struct rlimit limit;
+	limit.rlim_cur = limit.rlim_max = connections_max + 10;
+	if (setrlimit(RLIMIT_NOFILE, &limit) != 0) printf("Failed to set the maximum number of sockets (ulimit). Error: %d\n", errno);
+	if (getrlimit(RLIMIT_NOFILE, &limit) != 0) printf("Failed to set the maximum number of sockets (ulimit). Error: %d\n", errno);
+	if (limit.rlim_cur != connections_max + 10) printf("Failed to set the maximum number of sockets (soft ulimit). Should be %lu, actual value %lu. Fix your system or lower --connections_max\n", connections_max + 10, limit.rlim_cur);
+	if (limit.rlim_max != connections_max + 10) printf("Failed to set the maximum number of sockets (hard ulimit). Should be %lu, actual value %lu. Fix your system or lower --connections_max\n", connections_max + 10, limit.rlim_max);
+	// printf("The soft limit is %lu\n", limit.rlim_cur);
+	// printf("The hard limit is %lu\n", limit.rlim_max);
 
 	if (threads < 1)
 		threads = 1;

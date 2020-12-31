@@ -44,7 +44,7 @@ options:
         --height <pixels>               Framebuffer width. Default: Screen height.
         --port <port>                   TCP port. Default: 1234.
         --connection_timeout <seconds>  Connection timeout on idle. Default: 5s.
-        --connections_max <n>           Maximum number of open connections. Default: 1000.
+        --connections_max <n>           Maximum number of open connections. [1-60000] Default: 1000.
         --threads <n>                   Number of connection handler threads. Default: 4.
         --no-histogram                  Disable calculating and serving the histogram over HTTP.
         --window                        Start in window mode.
@@ -53,7 +53,7 @@ options:
         --hide_text                     Hide the overlay text.
         --show_ip_instead_of_hostname   Show IPv4 of interface with default-gateway on overlay.
         --show_custom_ip <IP>           Show specific IP instead of hostname.
-        --screenshot_interval <s>       Take screenshot every s seconds to png files in pixelflut dir.
+        --screenshot_interval <seconds> Time between screenshots. (png files in pixelflut dir) Default: disabled.
         --screenshot_use_bmp            Use bmp instead of png because of speed.
 ```
 
