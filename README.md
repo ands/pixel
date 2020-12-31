@@ -1,5 +1,5 @@
 # Pixelflut
-Fast pixelflut server written in C. It is a collaborative coding game. See https://cccgoe.de/wiki/Pixelflut for details about the game itself. In short: project the pixelflut server output onto a wall where many people can see it. Connected clients can then set single pixels by sending a string like "PX [x] [y] [color]\n" (e.g. "PX 100 300 00FF12\n") to its TCP socket. Use netcat, python or whatever you want.
+Fast pixelflut server written in C. It is a collaborative coding game. See https://cccgoe.de/wiki/Pixelflut for details about the game itself. In short: project the pixelflut server output onto a wall where many people can see it. Connected clients can then set single pixels by sending a string like "PX [x] [y] [color]\n" (e.g. "PX 100 300 00FF42\n") to its TCP socket. Use netcat, python or whatever you want.
 
 ## Hardware requirements
 Every cpu with a little bit of power (for 2D SDL) should work. On an Core i3-4010U you can easily utilize a 1 GBit Nic. On Raspberry Pi 4B you get around 30 megabytes/sek. On large events, 10 GBit fiber and a few more CPU-Cores are even more fun. On real server hardware you want to add a graphics card. One thread per CPU-Core seems to be a good rule of thumb.
@@ -9,6 +9,7 @@ Every cpu with a little bit of power (for 2D SDL) should work. On an Core i3-401
 - Can display an overlay with some statistics
 - Webinterface serves real-time WebGL histogram and help text (same TCP port)
 - Optional fade to black for old pixels to encourage pixel refreshes
+- Take manual and periodic screenshots
 - Supported commands:
   - send pixel: 'PX {x} {y} {GG or RRGGBB or RRGGBBAA as HEX}\n'
   - set offset for future pixels: 'OFFSET {x} {y}\n'
@@ -21,11 +22,16 @@ Every cpu with a little bit of power (for 2D SDL) should work. On an Core i3-401
 On a clean Debian installation with the "SSH server" and "standard system utilities" selected during setup. A system with desktop shound also work.
 ```
 apt update
-apt install xorg git build-essential pkg-config libsdl2-dev -y
+apt install xorg git build-essential pkg-config libsdl2-dev -libpng-dev -y
 git clone https://github.com/larsmm/pixelflut.git
 cd pixelflut
 make
 ```
+
+## Keys
+- q or ctrl+c: quit
+- f: toggle fullscreen
+- s: take screenshot (png file in pixelflut dir)
 
 ## Options
 ```
@@ -47,6 +53,8 @@ options:
         --hide_text                     Hide the overlay text.
         --show_ip_instead_of_hostname   Show IPv4 of interface with default-gateway on overlay.
         --show_custom_ip <IP>           Show specific IP instead of hostname.
+        --screenshot_interval <s>       Take screenshot every s seconds to png files in pixelflut dir.
+        --screenshot_use_bmp            Use bmp instead of png because of speed.
 ```
 
 ## Start Server locally
@@ -72,9 +80,6 @@ Start pixelflut on server display, e.g.:
 ```
 DISPLAY=:0.0 ./pixelflut
 ```
-
-## Stop Server
-Press q or Ctrl+c or kill the process
 
 ## Connection limit
 Best practise: set overall limit of the pixelflut-server high (--connections_max 1000) and limit max connections to the pixelflut port (default: 1234) per IP via iptables to 10-20:

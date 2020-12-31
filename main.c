@@ -1,12 +1,15 @@
 #include "server.c"
+#include "savepng.h"
 #include <SDL.h>
-#include<netdb.h>
-#include<ifaddrs.h>
+#include <netdb.h>
+#include <ifaddrs.h>
+#include <time.h>
 
 #define BEGINS_WITH(str, test) (!strncmp(str, test, sizeof(test)))
 #define OPTION(opt, desc) printf("\t" opt "\t" desc "\n")
 
 int get_ip_of_default_gateway_interface (char* ip);
+void take_screenshot(SDL_Renderer *renderer, long int screenshot_use_bmp);
 
 int main(int argc, char **argv)
 {
@@ -23,7 +26,7 @@ int main(int argc, char **argv)
 	int show_text = 1;
 	int show_ip_instead_of_hostname = 0;
 	char custom_ip_adress[256] = "";
-
+	long int screenshot_timer = 0, screenshot_interval = 0, screenshot_use_bmp = 0;
 
 	for (int i = 1; i < argc; i++)
 	{
@@ -44,6 +47,8 @@ int main(int argc, char **argv)
 			OPTION("--hide_text", "\t\tHide the overlay text.");
 			OPTION("--show_ip_instead_of_hostname", "Show IPv4 of interface with default-gateway on overlay.");
 			OPTION("--show_custom_ip <IP>", "\tShow specific IP instead of hostname.");
+			OPTION("--screenshot_interval <s>", "Take screenshot every s seconds to png files in pixelflut dir.");
+			OPTION("--screenshot_use_bmp", "\tUse bmp instead of png because of speed.");
 			return 0;
 		}
 		else if (BEGINS_WITH(argv[i], "--width") && i + 1 < argc)
@@ -72,6 +77,10 @@ int main(int argc, char **argv)
 			show_ip_instead_of_hostname = 1;
 		else if (BEGINS_WITH(argv[i], "--show_custom_ip"))
 			strcpy(custom_ip_adress,argv[++i]);
+		else if (BEGINS_WITH(argv[i], "--screenshot_interval") && i + 1 < argc)
+			screenshot_interval = strtol(argv[++i], 0, 10);
+		else if (BEGINS_WITH(argv[i], "--screenshot_use_bmp"))
+			screenshot_use_bmp = 1;
 		else
 		{
 			printf("unknown option \"%s\"\n", argv[i]);
@@ -124,7 +133,7 @@ int main(int argc, char **argv)
 	const int bytes_per_pixel = 4;
 	if (!sdlTexture)
 	{
-		printf("could not create texture\n");
+		printf("could not create SDL-texture (hint 1: run as root; hint 2: specify the correct xServer: 'DISPLAY=:0.0 ./pixelflut'; hint 3: if running via ssh, make sure using the same user for ssh and x session)\n");
 		SDL_Quit();
 		return 1;
 	}
@@ -164,8 +173,13 @@ int main(int argc, char **argv)
 			snprintf(text_additional, sizeof(text_additional), "echo \"PX <X> <Y> <RRGGBB>\\n\" > nc %s %d", hostname_or_ip, port);
 	}
 
-	while("the cat is sleeping on the keyboard")
+	int ctrl = 0;
+	struct timespec time;
+	
+	while("the cat is sleeping in the rc3.world")
 	{
+		clock_gettime(CLOCK_MONOTONIC, &time);
+
 		server_update(server);
 
 		if (show_text)
@@ -186,8 +200,13 @@ int main(int argc, char **argv)
 				text_bgcolor[0], text_bgcolor[1], text_bgcolor[2], text_bgcolor[3]);
 		}
 
-		SDL_UpdateTexture(sdlTexture, NULL, server->framebuffer.pixels,
-			server->framebuffer.width * server->framebuffer.bytesPerPixel);
+		SDL_UpdateTexture(sdlTexture, NULL, server->framebuffer.pixels, server->framebuffer.width * server->framebuffer.bytesPerPixel);
+
+		// in theory SDL_LockTexture should be faster than SDL_UpdateTexture. On rasperry pi 4b i got no visible improvement.
+		// int pitch=server->framebuffer.width * server->framebuffer.bytesPerPixel;
+		// SDL_LockTexture(sdlTexture, NULL, (void**)&server->framebuffer.pixels, &pitch);
+		// SDL_UnlockTexture(sdlTexture);
+
 		SDL_RenderCopy(renderer, sdlTexture, NULL, NULL);
 		SDL_RenderPresent(renderer);
 
@@ -200,17 +219,37 @@ int main(int argc, char **argv)
 			}
 			if(event.type == SDL_KEYDOWN)
 			{
-				if(event.key.keysym.sym == SDLK_q)
+				if(event.key.keysym.sym == SDLK_RCTRL || event.key.keysym.sym == SDLK_LCTRL)
+				{
+					ctrl = 1;
+				}
+				if(event.key.keysym.sym == SDLK_q || (ctrl && event.key.keysym.sym == SDLK_c))
 				{
 					break;
 				}
-				if(event.key.keysym.sym == SDLK_f)
+				if(event.key.keysym.sym == SDLK_f)  // toggel fullscreen
 				{
 					uint32_t flags = SDL_GetWindowFlags(window);
 					SDL_SetWindowFullscreen(window, (flags & SDL_WINDOW_FULLSCREEN) ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP);
 					printf("Toggled Fullscreen\n");
 				}
+				if(event.key.keysym.sym == SDLK_s)  // take screenshot
+				{
+					take_screenshot(renderer, screenshot_use_bmp);
+				}
 			}
+			if(event.type == SDL_KEYUP)
+			{
+				if(event.key.keysym.sym == SDLK_RCTRL || event.key.keysym.sym == SDLK_LCTRL)
+				{
+					ctrl = 0;
+				}
+			}
+		}
+
+		if ((time.tv_sec - screenshot_timer) > screenshot_interval && screenshot_interval > 0) {  // periodic screenshot
+			screenshot_timer = time.tv_sec;
+			take_screenshot(renderer, screenshot_use_bmp);
 		}
 	}
 
@@ -222,6 +261,39 @@ int main(int argc, char **argv)
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 	return 0;
+}
+
+void take_screenshot(SDL_Renderer *renderer, long int screenshot_use_bmp)
+{
+	char filename[34];
+	int width, height;
+	SDL_GetRendererOutputSize(renderer, &width, &height);
+	if (screenshot_use_bmp) {
+		// if(SDL_SaveBMP(sshot, filename) != 0)
+		SDL_Surface *sshot = SDL_CreateRGBSurface(0, width, height, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
+		SDL_RenderReadPixels(renderer, NULL, SDL_PIXELFORMAT_RGB888, sshot->pixels, sshot->pitch);
+		time_t t = time(NULL);
+		struct tm tm = *localtime(&t);
+		sprintf(filename, "pixelflut_%d-%02d-%02d_%02d-%02d-%02d.bmp", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+		if(SDL_SaveBMP(sshot, filename) != 0)
+			printf("Screenshot failed: %s\n", SDL_GetError());
+		else
+			printf("Screenshot taken: %s\n", filename);
+		SDL_FreeSurface(sshot);
+	} else {  // png
+		SDL_Surface *sshot = SDL_CreateRGBSurface(0, width, height, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
+		SDL_RenderReadPixels(renderer, NULL, SDL_PIXELFORMAT_ARGB8888, sshot->pixels, sshot->pitch);
+		SDL_Surface *sshot2 = SDL_PNGFormatAlpha(sshot);
+		SDL_FreeSurface(sshot);
+		time_t t = time(NULL);
+		struct tm tm = *localtime(&t);
+		sprintf(filename, "pixelflut_%d-%02d-%02d_%02d-%02d-%02d.png", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+		if(SDL_SavePNG(sshot2, filename) != 0)
+			printf("Screenshot failed: %s\n", SDL_GetError());
+		else
+			printf("Screenshot taken: %s\n", filename);
+		SDL_FreeSurface(sshot2);
+	}
 }
 
 int get_ip_of_default_gateway_interface (char* ip)
