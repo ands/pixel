@@ -180,10 +180,10 @@
 	</head>
 	<body onload="showdata();" style="background:black;color:white;font-family:monospace;">
 		<h1>ohai to pixelflut!</h1>
-		Real-time usage of the RGB color space quantized to eight sections on each axis:<br>
+		Pixelflut is a collaborative coding game. Project the pixelflut server output onto a wall where many people can see it. Connected clients can then set single pixels by sending a string like "PX [x] [y] [color]\n" (e.g. "PX 100 300 00FF42\n") to its TCP socket. Use netcat, python or whatever you want.<br><br>
 		
-		<canvas id="datacanvas" width="512" height="512" style="border: none;"></canvas><br>
-
+		Here you get this server: <a href="https://github.com/larsmm/pixelflut" style="color:#FF0000;">https://github.com/larsmm/pixelflut</a><br><br>
+		
 		<h2>how to flut</h2>
 		Connect via TCP to this address/port and use the following commandz:
 		<ul>
@@ -194,5 +194,10 @@
 			<li><b>request client connection count:</b> 'CONNECTIONS\n'</li>
 			<li><b>request this help message:</b> 'HELP\n'</li>
 		</ul>
+		Here some code examples: <a href="https://cccgoe.de/wiki/Pixelflut" style="color:#FF0000;">https://cccgoe.de/wiki/Pixelflut</a><br><br>
+		
+		<h2>color map</h2>
+		Real-time usage of the RGB color space quantized to eight sections on each axis. You can <b>not</b> see the actual pixelflut image via http. This is only a color map of this image. You will find it somewhere on a wall or in jitsi.<br>
+		<canvas id="datacanvas" width="512" height="512" style="border: none;"></canvas><br>
 	</body>
 </html>

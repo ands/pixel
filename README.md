@@ -19,10 +19,10 @@ Every cpu with a little bit of power (for 2D SDL) should work. On an Core i3-401
   - request help message with all commands: 'HELP\n'
 
 ## Build
-On a clean Debian installation with the "SSH server" and "standard system utilities" selected during setup. A system with desktop shound also work.
+On a clean Debian installation with the "SSH server" and "standard system utilities" selected during setup. A system with desktop should also work.
 ```
 apt update
-apt install xorg git build-essential pkg-config libsdl2-dev -libpng-dev -y
+apt install xorg git build-essential pkg-config libsdl2-dev libpng-dev -y
 git clone https://github.com/larsmm/pixelflut.git
 cd pixelflut
 make
